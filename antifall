@@ -1,0 +1,60 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- === ANTI FALL COOLDOWN EXTREMO ===
+local function noFallCooldown(character)
+	local humanoid = character:WaitForChild("Humanoid")
+
+	humanoid.StateChanged:Connect(function(_, newState)
+		if newState == Enum.HumanoidStateType.GettingUp then
+			humanoid:ChangeState(Enum.HumanoidStateType.Running)
+		elseif newState == Enum.HumanoidStateType.FallingDown or newState == Enum.HumanoidStateType.Physics then
+			humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+		end
+	end)
+
+	while humanoid and humanoid.Parent do
+		if humanoid:GetState() == Enum.HumanoidStateType.GettingUp or humanoid:GetState() == Enum.HumanoidStateType.FallingDown then
+			humanoid:ChangeState(Enum.HumanoidStateType.Running)
+		end
+		task.wait(0.01)
+	end
+end
+
+LocalPlayer.CharacterAdded:Connect(noFallCooldown)
+if LocalPlayer.Character then
+	noFallCooldown(LocalPlayer.Character)
+end
+
+-- === ANTI RAGDOLL ===
+local function preventRagdoll(character)
+	local humanoid = character:WaitForChild("Humanoid")
+
+	for _, v in ipairs(character:GetDescendants()) do
+		if v:IsA("BallSocketConstraint") or v:IsA("HingeConstraint") or v:IsA("Motor6D") then
+			v.Enabled = true
+		end
+	end
+
+	humanoid.StateChanged:Connect(function(_, new)
+		if new == Enum.HumanoidStateType.Physics or new == Enum.HumanoidStateType.FallingDown or new == Enum.HumanoidStateType.Ragdoll then
+			humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+		end
+	end)
+
+	local function monitor()
+		while character and character.Parent do
+			if not humanoid or not humanoid.Parent then
+				character:BreakJoints()
+			end
+			task.wait(0.5)
+		end
+	end
+
+	task.spawn(monitor)
+end
+
+LocalPlayer.CharacterAdded:Connect(preventRagdoll)
+if LocalPlayer.Character then
+	preventRagdoll(LocalPlayer.Character)
+end
